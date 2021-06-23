@@ -1,5 +1,6 @@
 # Data
 data/
+data_old/
 
 # Model
 *.h5

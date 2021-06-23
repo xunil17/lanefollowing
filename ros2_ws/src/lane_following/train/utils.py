@@ -5,6 +5,9 @@ import cv2
 import os
 import errno
 
+import numpy as np
+from numba import jit, prange
+
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 CSV_PATH = u'{}/data'.format(BASE_PATH)
@@ -68,15 +71,47 @@ def random_mini_batches(X, Y, mini_batch_size=64, seed=0):
     return mini_batches
 
 
-def preprocess_image(cv_img, crop=True):
+def preprocess_image(cv_img, crop=False):
     if crop:
         cv_img = cv_img[540:960, :, :]
     cv_img = cv2.resize(cv_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
     cv_img = cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+
+    cv_img = rgb2yuv(cv_img)
     # cv_img = cv_img / 255. - 0.5
 
     return cv_img
 
+@jit(nopython=True, parallel=True, nogil=True, debug=True)
+def rgb2yuv(pix):
+    img = np.zeros((pix.shape[0] // 2, pix.shape[1] // 2, 6))
+
+    for i in prange(img.shape[0]):
+        for j in prange(img.shape[1]):
+            U_val = 0
+            V_val = 0
+            for k in prange(4):
+                if k == 0:
+                    p = pix[i * 2, j * 2]
+                elif k == 1:
+                    p = pix[i * 2, j * 2 + 1]
+                elif k == 2:
+                    p = pix[i * 2 + 1, j * 2]
+                elif k == 3:
+                    p = pix[i * 2 + 1, j * 2 + 1]
+
+                Y_val = 0.25681631 * p[0] + 0.50415484 * p[1] + 0.09791402 * p[2]
+                U = -0.14824553 * p[0] + -0.29102007 * p[1] + 0.4392656 * p[2]
+                V = 0.43927107 * p[0] + -0.36783273 * p[1] - 0.07143833 * p[2]
+
+                img[i, j, k] = (Y_val - 112) / 128
+                U_val += U
+                V_val += V
+
+            img[i, j, 4] = U_val / 4 / 128
+            img[i, j, 5] = V_val / 4 / 128
+
+    return img
 
 def mkdir_p(path):
     try:

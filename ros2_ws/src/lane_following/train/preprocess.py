@@ -8,7 +8,7 @@ from utils import mkdir_p, preprocess_image, CSV_PATH, IMG_PATH, HDF5_PATH
 
 
 BIAS = 0.025
-BATCH_SIZE = 10000
+BATCH_SIZE = 1000
 
 
 def split_data(train_test_ratio=0.8):
@@ -82,7 +82,7 @@ def write_to_hdf5(phase='train'):
 
             img_path = os.path.join(IMG_PATH, '{}-{}.jpg'.format(camera, img_id))
             image = cv2.imread(img_path)
-            image = preprocess_image(image, crop=True)
+            image = preprocess_image(image, crop=False)
             label = float(label) + bias
 
             images.append(image)

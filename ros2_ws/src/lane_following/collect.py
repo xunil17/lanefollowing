@@ -46,12 +46,15 @@ class Collect(Node):
         ts_sec = center_camera.header.stamp.sec
         ts_nsec = center_camera.header.stamp.nanosec
         steer_cmd = canbus.steer_pct
+        throttle_pct = canbus.throttle_pct
+        brake_pct = canbus.brake_pct
+        speed_mps = canbus.speed_mps
 
         self.log.info("[{}.{}] Format: {}, Steering_cmd: {}".format(ts_sec, ts_nsec, center_camera.format, steer_cmd))
 
         msg_id = str(datetime.now().isoformat())
         self.save_image(center_camera, left_camera, right_camera, msg_id)
-        self.save_csv(steer_cmd, msg_id)
+        self.save_csv(steer_cmd, throttle_pct, brake_pct, speed_mps, msg_id)
 
     def save_image(self, center_camera, left_camera, right_camera, msg_id):
         center_img_np_arr = np.fromstring(bytes(center_camera.data), np.uint8)
@@ -64,10 +67,10 @@ class Collect(Node):
         cv2.imwrite(os.path.join(IMG_PATH, 'left-{}.jpg'.format(msg_id)), left_img_cv)
         cv2.imwrite(os.path.join(IMG_PATH, 'right-{}.jpg'.format(msg_id)), right_img_cv)
 
-    def save_csv(self, steer_cmd, msg_id):
+    def save_csv(self, steer_cmd, throttle_pct, brake_pct, speed_mps, msg_id):
         with open(os.path.join(CSV_PATH, 'training_data.csv'), 'a+') as f:
             writer = csv.writer(f, delimiter=',')
-            writer.writerow([msg_id, steer_cmd])
+            writer.writerow([msg_id, steer_cmd, throttle_pct, brake_pct, speed_mps])
 
 
 def main(args=None):

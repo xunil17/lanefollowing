@@ -11,6 +11,8 @@ from datetime import datetime
 import time
 from sklearn.model_selection import train_test_split
 
+from models import build_nvidia_model, build_openpilot_model
+
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -31,19 +33,7 @@ print('Y_train shape:', Y_train.shape)
 print('X_test shape:', X_test.shape)
 print('Y_test shape:', Y_test.shape)
 
-model = Sequential()
-model.add(Lambda(lambda x: x / 255.0, input_shape=(70, 320, 3)))
-model.add(Conv2D(24, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-model.add(Conv2D(36, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-model.add(Conv2D(48, (5, 5), strides=(2, 2), padding='valid', activation='relu'))
-model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
-model.add(Conv2D(64, (3, 3), strides=(1, 1), padding='valid', activation='relu'))
-model.add(Dropout(0.5))
-model.add(Flatten())
-model.add(Dense(100, activation='relu'))
-model.add(Dense(50, activation='relu'))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(1))
+model = build_openpilot_model()
 
 model.summary()
 model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')
