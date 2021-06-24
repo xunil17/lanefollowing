@@ -33,13 +33,23 @@ print('Y_train shape:', Y_train.shape)
 print('X_test shape:', X_test.shape)
 print('Y_test shape:', Y_test.shape)
 
+train_len = X_train.shape[0]
+test_len = X_test.shape[0]
+
+X_desire = np.tile(np.zeros(8), (train_len, 1))
+X_rnn = np.tile(np.zeros(512), (train_len, 1))
+
+Y_desire = np.tile(np.zeros(8), (test_len, 1))
+Y_rnn = np.tile(np.zeros(512), (test_len, 1))
+
+
 model = build_modified_openpilot_model()
 
 model.summary()
 model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')
 
 t0 = time.time()
-model.fit(X_train, Y_train, validation_data=(X_test, Y_test), shuffle=True, epochs=30, batch_size=128)
+model.fit({'vision': X_train, 'desire': X_desire, 'rnn_state': X_rnn}, Y_train, validation_data=(X_test, Y_test), shuffle=True, epochs=30, batch_size=128)
 t1 = time.time()
 print('Total training time:', t1 - t0, 'seconds')
 
