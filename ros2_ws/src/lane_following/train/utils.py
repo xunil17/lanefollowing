@@ -15,7 +15,7 @@ IMG_PATH = u'{}/data/img'.format(BASE_PATH)
 HDF5_PATH = u'{}/data/hdf5'.format(BASE_PATH)
 MODEL_PATH = u'{}/model'.format(BASE_PATH)
 # OPENPILOT_PATH = 
-IMAGE_DIM = (128, 256)
+IMAGE_DIM = (256*2, 128*2)
 
 
 def load_dataset(file_name):
@@ -75,13 +75,16 @@ def random_mini_batches(X, Y, mini_batch_size=64, seed=0):
 def preprocess_image(cv_img, crop=False):
     if crop:
         cv_img = cv_img[540:960, :, :]
+
+    
     cv_img = cv2.resize(cv_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
+    # print(cv_img.shape)
     cv_img = cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-
-    # print(cv_img.shape)
-
     cv_img = rgb2yuv(cv_img)
+
+    cv_img = np.transpose(cv_img, (2, 0, 1))
     # print(cv_img.shape)
+
     # cv_img = cv_img / 255. - 0.5
 
     return cv_img

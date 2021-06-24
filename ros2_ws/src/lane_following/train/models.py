@@ -29,8 +29,8 @@ def build_openpilot_model():
     desire = Input(shape=(8,), dtype='float32', name='desire')  # NEW in v0.6.6
     rnn_state = Input(shape=(512,), dtype='float32', name='rnn_state')
 
-    # After permutation, the output shape will be (80, 160, 6)
-    vision_permute = Permute((2,3,1), input_shape=(6,128,64), name='vision_permute')(vision_input)
+    # After permutation, the output shape will be (128, 256, 6)
+    vision_permute = Permute((2,3,1), input_shape=(6,128,256), name='vision_permute')(vision_input)
     vision_conv2d = Conv2D(8, 5, strides=1, padding="same", name='vision_conv2d')(vision_permute)
 
 

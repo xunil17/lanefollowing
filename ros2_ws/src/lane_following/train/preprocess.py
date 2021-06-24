@@ -8,7 +8,7 @@ from utils import mkdir_p, preprocess_image, CSV_PATH, IMG_PATH, HDF5_PATH
 
 
 BIAS = 0.025
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 
 def split_data(train_test_ratio=0.8):
