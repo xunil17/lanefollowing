@@ -299,12 +299,11 @@ def build_modified_openpilot_model():
     openpilot_model.trainable = False
     openpilot_model.load_weights('/lanefollowing/ros2_ws/src/lane_following/model/driving_model.h5')
 
-    # vision_input = Input(shape=(6, 128, 256), dtype='float32', name='vision')
-    # desire = Input(shape=(8,), dtype='float32', name='desire')  # NEW in v0.6.6
-    # rnn_state = Input(shape=(512,), dtype='float32', name='rnn_state')
+    # set all previous weights to be untrainable
+    for k in openpilot_model.layers:
+        k.trainable = False
 
-    # x = openpilot_model(inputs = [vision_input, desire, rnn_state])
-
+    # add outputs for steering command
     dense_1_final = Dense(100, name='dense_1_final')(openpilot_model.get_layer("outputs").output)
     elu_1_final = ReLU(name = 'elu_1_final')(dense_1_final)
     dense_2_final = Dense(50, name='dense_2_final')(elu_1_final)
@@ -319,8 +318,6 @@ def build_modified_openpilot_model():
     # steering angle
     # acceleration/speed
     # lateral/longitiudinal
-
-    # print(model.summary())
     plot_model(model, to_file='driving_model.png')
     
     return model
