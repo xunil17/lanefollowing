@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 from sklearn.model_selection import train_test_split
 
-from models import build_nvidia_model, build_openpilot_model
+from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model
 
 
 config = tf.ConfigProto()
@@ -33,7 +33,7 @@ print('Y_train shape:', Y_train.shape)
 print('X_test shape:', X_test.shape)
 print('Y_test shape:', Y_test.shape)
 
-model = build_openpilot_model()
+model = build_modified_openpilot_model()
 
 model.summary()
 model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')

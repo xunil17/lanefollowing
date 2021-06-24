@@ -85,6 +85,7 @@ def write_to_hdf5(phase='train'):
             image = preprocess_image(image, crop=False)
             label = float(label) + bias
 
+            # images.append([image, np.zeros(8), np.zeros(512)])
             images.append(image)
             labels.append(label)
 

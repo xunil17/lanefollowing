@@ -14,7 +14,8 @@ CSV_PATH = u'{}/data'.format(BASE_PATH)
 IMG_PATH = u'{}/data/img'.format(BASE_PATH)
 HDF5_PATH = u'{}/data/hdf5'.format(BASE_PATH)
 MODEL_PATH = u'{}/model'.format(BASE_PATH)
-IMAGE_DIM = (320, 70)
+# OPENPILOT_PATH = 
+IMAGE_DIM = (128, 256)
 
 
 def load_dataset(file_name):
@@ -77,7 +78,10 @@ def preprocess_image(cv_img, crop=False):
     cv_img = cv2.resize(cv_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
     cv_img = cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
 
+    # print(cv_img.shape)
+
     cv_img = rgb2yuv(cv_img)
+    # print(cv_img.shape)
     # cv_img = cv_img / 255. - 0.5
 
     return cv_img

@@ -4,7 +4,7 @@ services:
   build_ros:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_build
     volumes:
       - .:/lanefollowing
@@ -16,7 +16,7 @@ services:
   collect:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_collect
     volumes:
       - .:/lanefollowing
@@ -31,7 +31,7 @@ services:
   preprocess:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_preprocess
     volumes:
       - .:/lanefollowing
@@ -46,7 +46,7 @@ services:
   train:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_train
     volumes:
       - .:/lanefollowing
@@ -61,7 +61,7 @@ services:
   drive:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_drive
     volumes:
       - .:/lanefollowing
@@ -76,7 +76,7 @@ services:
   drive_visual:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_drive_visual
     volumes:
       - ${XAUTHORITY}:/tmp/.Xauthority
@@ -95,7 +95,7 @@ services:
   drive_cpu:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_drive_cpu
     volumes:
       - ${XAUTHORITY}:/tmp/.Xauthority
@@ -116,7 +116,7 @@ services:
   drive_visual_cpu:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_drive_visual_cpu
     volumes:
       - ${XAUTHORITY}:/tmp/.Xauthority
@@ -138,7 +138,7 @@ services:
   jupyter:
     build:
       context: .
-    image: lgsvl/lanefollowing:latest
+    image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_jupyter
     volumes:
       - .:/lanefollowing
