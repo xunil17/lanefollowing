@@ -118,7 +118,12 @@ class Drive(Node):
         img = cv2.imdecode(c, cv2.IMREAD_COLOR)
         img = preprocess_image(img)
         img = np.expand_dims(img, axis=0)  # img = img[np.newaxis, :, :]
-        steering = self.model.predict(img)
+
+        desire = np.expand_dims(np.zeros(8), axis=0)
+        rnn = np.expand_dims(np.zeros(512), axis=0)
+        steering = self.model.predict({'vision': img, 'desire': desire, 'rnn_state': rnn})
+
+        # steering = self.model.predict(img)
 
         return steering
 

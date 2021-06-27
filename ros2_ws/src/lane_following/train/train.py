@@ -42,7 +42,6 @@ X_train_rnn = np.tile(np.zeros(512), (train_len, 1))
 X_test_desire = np.tile(np.zeros(8), (test_len, 1))
 X_test_rnn = np.tile(np.zeros(512), (test_len, 1))
 
-
 model = build_modified_openpilot_model()
 
 model.summary()
