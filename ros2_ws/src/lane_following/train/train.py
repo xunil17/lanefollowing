@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 
 from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '0' 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)

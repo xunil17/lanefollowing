@@ -304,17 +304,19 @@ def build_modified_openpilot_model():
         k.trainable = False
 
     # add outputs for steering command, should output of rnn state be used here?
-    dense_1_final = Dense(100, name='dense_1_final')(openpilot_model.get_layer("outputs").output)
-    elu_1_final = ReLU(name = 'elu_1_final')(dense_1_final)
-    dense_2_final = Dense(50, name='dense_2_final')(elu_1_final)
-    elu_2_final = ReLU(name = 'elu_2_final')(dense_2_final)
-    dense_3_final = Dense(10, name='dense_3_final')(elu_2_final)
-    elu_3_final = ReLU(name = 'elu_3_final')(dense_3_final)
-    dense_4_final = Dense(1, name = 'output')(elu_3_final)
+    dense_1_final = Dense(1000, name='dense_1_final')(openpilot_model.get_layer("outputs").output)
+    relu_1_final = ReLU(name = 'relu_1_final')(dense_1_final)
+    dense_2_final = Dense(100, name='dense_2_final')(relu_1_final)
+    relu_2_final = ReLU(name = 'relu_2_final')(dense_2_final)
+    dense_3_final = Dense(50, name='dense_3_final')(relu_2_final)
+    relu_3_final = ReLU(name = 'relu_3_final')(dense_3_final)
+    dense_4_final = Dense(10, name='dense_4_final')(relu_3_final)
+    relu_4_final = ReLU(name = 'relu_4_final')(dense_4_final)
+    dense_5_final = Dense(1, name = 'output')(relu_4_final)
 
     rnn_out = openpilot_model.get_layer("add_3").output
     # model = Model(inputs=openpilot_model.inputs, outputs=[dense_4_final, rnn_out], name='driving_model')
-    model = Model(inputs=openpilot_model.inputs, outputs=[dense_4_final], name='driving_model')
+    model = Model(inputs=openpilot_model.inputs, outputs=[dense_5_final], name='driving_model')
     
     # steering angle
     # acceleration/speed
