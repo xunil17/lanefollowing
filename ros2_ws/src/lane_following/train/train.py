@@ -11,9 +11,9 @@ from datetime import datetime
 import time
 from sklearn.model_selection import train_test_split
 
-from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model
+from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model, build_concat_openpilot_model
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '0' 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
@@ -43,7 +43,7 @@ X_test_desire = np.tile(np.zeros(8), (test_len, 1))
 X_test_rnn = np.tile(np.zeros(512), (test_len, 1))
 
 
-model = build_modified_openpilot_model()
+model = build_concat_openpilot_model()
 
 model.summary()
 model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')
