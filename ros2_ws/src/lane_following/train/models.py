@@ -293,7 +293,6 @@ def build_openpilot_keras_model():
     #model.load_weights('../testdata/driving_model.h5')
     return model
 
-
 def build_modified_openpilot_model():
     openpilot_model = build_openpilot_model()
     openpilot_model.trainable = False
@@ -323,4 +322,167 @@ def build_modified_openpilot_model():
     # lateral/longitiudinal
     plot_model(model, to_file='driving_model.png', show_shapes=True)
     
+    return model
+
+def build_concat_openpilot_model():
+    vision_input = Input(shape=(6,128,256), dtype='float32', name='vision')
+    desire = Input(shape=(8,), dtype='float32', name='desire')  # NEW in v0.6.6
+    rnn_state = Input(shape=(512,), dtype='float32', name='rnn_state')
+
+    # After permutation, the output shape will be (128, 256, 6)
+    vision_permute = Permute((2,3,1), input_shape=(6,128,256), name='vision_permute')(vision_input)
+    vision_conv2d = Conv2D(8, 5, strides=1, padding="same", name='vision_conv2d')(vision_permute)
+
+
+    vision_elu = ELU(alpha=1.0, name='vision_elu')(vision_conv2d)
+
+    # vision_max_pooling2d = MaxPooling2D(pool_size=3, strides=2, padding="same", name='vision_max_pooling2d')(vision_elu)
+    vision_average_pooling2d = AveragePooling2D(pool_size=3, strides=2, padding="same", name='vision_average_pooling2d')(vision_elu)  # CHANGE in v0.6.6
+
+    # Conv2 block1 - lane0
+    vision_conv2_block1_0_conv = Conv2D(16, 1, strides=1, padding="same", name='vision_conv2_block1_0_conv')(vision_average_pooling2d)
+    # Conv2 block1 - lane1
+    vision_conv2_block1_1_conv = Conv2D(16, 3, strides=1, padding="same", name='vision_conv2_block1_1_conv')(vision_average_pooling2d)
+    vision_conv2_block1_1_elu = ELU(alpha=1.0, name='vision_conv2_block1_1_elu')(vision_conv2_block1_1_conv)
+    vision_conv2_block1_2_conv = Conv2D(16, 3, strides=1, padding="same", name='vision_conv2_block1_2_conv')(vision_conv2_block1_1_elu)
+    vision_conv2_block1_2_elu = ELU(alpha=1.0, name='vision_conv2_block1_2_elu')(vision_conv2_block1_2_conv)
+    vision_conv2_block1_add = Add(name='vision_conv2_block1_add')([vision_conv2_block1_0_conv, vision_conv2_block1_2_elu])
+    vision_conv2_block1_out = ELU(alpha=1.0, name='vision_conv2_block1_out')(vision_conv2_block1_add)
+    # Conv2 block2 - lane1
+    vision_conv2_block2_1_conv = Conv2D(16, 3, strides=1, padding="same", name='vision_conv2_block2_1_conv')(vision_conv2_block1_out)
+    vision_conv2_block2_1_elu = ELU(alpha=1.0, name='vision_conv2_block2_1_elu')(vision_conv2_block2_1_conv)
+    vision_conv2_block2_2_conv = Conv2D(16, 3, strides=1, padding="same", name='vision_conv2_block2_2_conv')(vision_conv2_block2_1_elu)
+    vision_conv2_block2_2_elu = ELU(alpha=1.0, name='vision_conv2_block2_2_elu')(vision_conv2_block2_2_conv)
+    vision_conv2_block2_add = Add(name='vision_conv2_block2_add')([vision_conv2_block1_out, vision_conv2_block2_2_elu])
+    vision_conv2_block2_out = ELU(alpha=1.0, name='vision_conv2_block2_out')(vision_conv2_block2_add)
+
+    # Conv3 block1 - lane0
+    vision_conv3_block1_0_conv = Conv2D(32, 1, strides=2, padding="same", name='vision_conv3_block1_0_conv')(vision_conv2_block2_out)
+    # Conv3 block1 - lane1
+    vision_conv3_block1_1_conv = Conv2D(32, 3, strides=2, padding="same", name='vision_conv3_block1_1_conv')(vision_conv2_block2_out)
+    vision_conv3_block1_1_elu = ELU(alpha=1.0, name='vision_conv3_block1_1_elu')(vision_conv3_block1_1_conv)
+    vision_conv3_block1_2_conv = Conv2D(32, 3, strides=1, padding="same", name='vision_conv3_block1_2_conv')(vision_conv3_block1_1_elu)
+    vision_conv3_block1_2_elu = ELU(alpha=1.0, name='vision_conv3_block1_2_elu')(vision_conv3_block1_2_conv)
+    vision_conv3_block1_add = Add(name='vision_conv3_block1_add')([vision_conv3_block1_0_conv, vision_conv3_block1_2_elu])
+    vision_conv3_block1_out = ELU(alpha=1.0, name='vision_conv3_block1_out')(vision_conv3_block1_add)
+    # Conv3 block2 - lane1
+    vision_conv3_block2_1_conv = Conv2D(32, 3, strides=1, padding="same", name='vision_conv3_block2_1_conv')(vision_conv3_block1_out)
+    vision_conv3_block2_1_elu = ELU(alpha=1.0, name='vision_conv3_block2_1_elu')(vision_conv3_block2_1_conv)
+    vision_conv3_block2_2_conv = Conv2D(32, 3, strides=1, padding="same", name='vision_conv3_block2_2_conv')(vision_conv3_block2_1_elu)
+    vision_conv3_block2_2_elu = ELU(alpha=1.0, name='vision_conv3_block2_2_elu')(vision_conv3_block2_2_conv)
+    vision_conv3_block2_add = Add(name='vision_conv3_block2_add')([vision_conv3_block1_out, vision_conv3_block2_2_elu])
+    vision_conv3_block2_out = ELU(alpha=1.0, name='vision_conv3_block2_out')(vision_conv3_block2_add)
+
+    # Conv4 block1 - lane0
+    vision_conv4_block1_0_conv = Conv2D(48, 1, strides=2, padding="same", name='vision_conv4_block1_0_conv')(vision_conv3_block2_out)
+    # Conv4 block1 - lane1
+    vision_conv4_block1_1_conv = Conv2D(48, 3, strides=2, padding="same", name='vision_conv4_block1_1_conv')(vision_conv3_block2_out)
+    vision_conv4_block1_1_elu = ELU(alpha=1.0, name='vision_conv4_block1_1_elu')(vision_conv4_block1_1_conv)
+    vision_conv4_block1_2_conv = Conv2D(48, 3, strides=1, padding="same", name='vision_conv4_block1_2_conv')(vision_conv4_block1_1_elu)
+    vision_conv4_block1_2_elu = ELU(alpha=1.0, name='vision_conv4_block1_2_elu')(vision_conv4_block1_2_conv)
+    vision_conv4_block1_add = Add(name='vision_conv4_block1_add')([vision_conv4_block1_0_conv, vision_conv4_block1_2_elu])
+    vision_conv4_block1_out = ELU(alpha=1.0, name='vision_conv4_block1_out')(vision_conv4_block1_add)
+    # Conv4 block2 - lane1
+    vision_conv4_block2_1_conv = Conv2D(48, 3, strides=1, padding="same", name='vision_conv4_block2_1_conv')(vision_conv4_block1_out)
+    vision_conv4_block2_1_elu = ELU(alpha=1.0, name='vision_conv4_block2_1_elu')(vision_conv4_block2_1_conv)
+    vision_conv4_block2_2_conv = Conv2D(48, 3, strides=1, padding="same", name='vision_conv4_block2_2_conv')(vision_conv4_block2_1_elu)
+    vision_conv4_block2_2_elu = ELU(alpha=1.0, name='vision_conv4_block2_2_elu')(vision_conv4_block2_2_conv)
+    vision_conv4_block2_add = Add(name='vision_conv4_block2_add')([vision_conv4_block1_out, vision_conv4_block2_2_elu])
+    vision_conv4_block2_out = ELU(alpha=1.0, name='vision_conv4_block2_out')(vision_conv4_block2_add)
+
+    # Conv5 block1 - lane0
+    vision_conv5_block1_0_conv = Conv2D(64, 1, strides=2, padding="same", name='vision_conv5_block1_0_conv')(vision_conv4_block2_out)
+    # Conv5 block1 - lane1
+    vision_conv5_block1_1_conv = Conv2D(64, 3, strides=2, padding="same", name='vision_conv5_block1_1_conv')(vision_conv4_block2_out)
+    vision_conv5_block1_1_elu = ELU(alpha=1.0, name='vision_conv5_block1_1_elu')(vision_conv5_block1_1_conv)
+    vision_conv5_block1_2_conv = Conv2D(64, 3, strides=1, padding="same", name='vision_conv5_block1_2_conv')(vision_conv5_block1_1_elu)
+    vision_conv5_block1_2_elu = ELU(alpha=1.0, name='vision_conv5_block1_2_elu')(vision_conv5_block1_2_conv)
+    vision_conv5_block1_add = Add(name='vision_conv5_block1_add')([vision_conv5_block1_0_conv, vision_conv5_block1_2_elu])
+    vision_conv5_block1_out = ELU(alpha=1.0, name='vision_conv5_block1_out')(vision_conv5_block1_add)
+    # Conv5 block2 - lane1
+    vision_conv5_block2_1_conv = Conv2D(64, 3, strides=1, padding="same", name='vision_conv5_block2_1_conv')(vision_conv5_block1_out)
+    vision_conv5_block2_1_elu = ELU(alpha=1.0, name='vision_conv5_block2_1_elu')(vision_conv5_block2_1_conv)
+    vision_conv5_block2_2_conv = Conv2D(64, 3, strides=1, padding="same", name='vision_conv5_block2_2_conv')(vision_conv5_block2_1_elu)
+    vision_conv5_block2_2_elu = ELU(alpha=1.0, name='vision_conv5_block2_2_elu')(vision_conv5_block2_2_conv)
+    vision_conv5_block2_add = Add(name='vision_conv5_block2_add')([vision_conv5_block1_out, vision_conv5_block2_2_elu])
+    vision_conv5_block2_out = ELU(alpha=1.0, name='vision_conv5_block2_out')(vision_conv5_block2_add)
+
+    ############# VALIDATED ##############
+    # Below are the different parts
+
+    # conv2d 1
+    vision_conv2d_1 = Conv2D(4, 1, strides=1, padding="same",
+            name='vision_conv2d_1')(vision_conv5_block2_out)
+    
+    vision_elu_1 = ELU(alpha=1.0, name='vision_elu_1')(vision_conv2d_1)
+    # vision_elu_1 = ELU(alpha=1.0, name='vision_elu_1')(vision_concatenate)
+    dense = Dense(512, name='dense')(Flatten()(vision_elu_1))
+    main_relu = ReLU(name='main_relu')(dense)  # FIXME: find the meaning of each field
+
+    # desire input
+    snpe_desire_pleaser = Dense(8, name='snpe_desire_pleaser')(desire)
+
+    proc_features = Concatenate(name='proc_features')([main_relu, snpe_desire_pleaser])
+
+    # TODO: add a bunch of layers here
+
+    # GRU, TODO: implement using primitives
+    # add_3 = GRU(512, activation='tanh', recurrent_activation='hard_sigmoid', use_bias=True, name='add_3')(reshape)
+    rnn_z = Dense(512, name='rnn_z')(proc_features)
+    rnn_rz = Dense(512, name='rnn_rz')(rnn_state)
+    add = Add(name='add')([rnn_z, rnn_rz])
+    activation_1 = Activation('sigmoid', name='activation_1')(add)
+    snpe_pleaser = Dense(512, name='snpe_pleaser')(rnn_state)
+    rnn_rh = Dense(512, name='rnn_rh')(snpe_pleaser)
+
+    rnn_h = Dense(512, name='rnn_h')(proc_features)
+    rnn_r = Dense(512, name='rnn_r')(proc_features)
+    rnn_rr = Dense(512, name='rnn_rr')(rnn_state)
+    add_1 = Add(name='add_1')([rnn_r, rnn_rr])
+    activation = Activation('sigmoid', name='activation')(add_1)
+
+    multiply = Multiply(name='multiply')([rnn_rh, activation])
+    add_2 = Add(name='add_2')([rnn_h, multiply])
+    activation_2 = Activation('tanh', name='activation_2')(add_2)
+
+    multiply_1 = Multiply(name='multiply_1')([activation_1, snpe_pleaser])  # one end
+    one_minus = Dense(512, name='one_minus')(activation_1)
+    multiply_2 = Multiply(name='multiply_2')([one_minus, activation_2])  # other end
+    add_3 = Add(name='add_3')([multiply_1, multiply_2])
+
+    ### Meta
+    meta_dense_1 = Dense(256, name='meta_dense_1')(main_relu)
+    meta_relu_1 = ReLU(name='meta_relu_1')(meta_dense_1)
+    meta_dense_2 = Dense(128, name='meta_dense_2')(meta_relu_1)
+    meta_relu_2 = ReLU(name='meta_relu_2')(meta_dense_2)
+    meta_dense_3 = Dense(64, name='meta_dense_3')(meta_relu_2)
+    meta_relu_3 = ReLU(name='meta_relu_3')(meta_dense_3)
+    meta_dense_4 = Dense(64, name='meta_dense_4')(meta_relu_3)
+    meta_relu_4 = ReLU(name='meta_relu_4')(meta_dense_4)
+
+    desire_final_dense = Dense(32, name='desire_final_dense')(meta_relu_4)
+    desire_reshape = Reshape((4, 8), name='desire_reshape')(desire_final_dense)
+    softmax_ = Softmax(name='softmax')(desire_reshape)
+    flatten_ = Flatten(name='flatten')(softmax_)
+    snpe_pleaser2 = Dense(32, name='snpe_pleaser2')(flatten_)
+    
+    dense_1 = Dense(4, name='dense_1', activation='sigmoid')(meta_relu_4)
+
+    # steering
+    dense_1_final = Dense(1000, name='dense_1_final')(dense_1)
+    relu_1_final = ReLU(name = 'relu_1_final')(dense_1_final)
+    dense_2_final = Dense(100, name='dense_2_final')(relu_1_final)
+    relu_2_final = ReLU(name = 'relu_2_final')(dense_2_final)
+    dense_3_final = Dense(50, name='dense_3_final')(relu_2_final)
+    relu_3_final = ReLU(name = 'relu_3_final')(dense_3_final)
+    dense_4_final = Dense(10, name='dense_4_final')(relu_3_final)
+    relu_4_final = ReLU(name = 'relu_4_final')(dense_4_final)
+    steering = Dense(1, name = 'output')(relu_4_final)
+
+    # Output dimension should be (1,)
+    outputs = Concatenate(name='outputs')([steering, add_3])
+    model = Model(inputs=[vision_input, desire, rnn_state], outputs=outputs, name='openpilot_model')
+
+    plot_model(model, to_file='openpilot_concat_model.png')
+
     return model

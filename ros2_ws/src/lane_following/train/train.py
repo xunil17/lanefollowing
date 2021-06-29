@@ -11,8 +11,9 @@ from datetime import datetime
 import time
 from sklearn.model_selection import train_test_split
 
-from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model
+from models import build_nvidia_model, build_openpilot_model, build_modified_openpilot_model, build_concat_openpilot_model
 
+tf.enable_eager_execution()
 os.environ["CUDA_VISIBLE_DEVICES"] = '0' 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -28,6 +29,12 @@ print('Number of labels:', Y_data.shape[0])
 
 print('Splitting data into training set and testing set....')
 X_train, X_test, Y_train, Y_test = train_test_split(X_data, Y_data, test_size=0.2, random_state=42)
+
+train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
+test_dataset = tf.data.Dataset.from_tensor_slices((X_test, Y_test))
+
+# print(train_dataset)
+
 print('X_train shape:', X_train.shape)
 print('Y_train shape:', Y_train.shape)
 print('X_test shape:', X_test.shape)
@@ -36,22 +43,64 @@ print('Y_test shape:', Y_test.shape)
 train_len = X_train.shape[0]
 test_len = X_test.shape[0]
 
-X_train_desire = np.tile(np.zeros(8), (train_len, 1))
-X_train_rnn = np.tile(np.zeros(512), (train_len, 1))
+# X_train_desire = np.tile(np.zeros(8), (train_len, 1))
+# X_train_rnn = np.tile(np.zeros(512), (train_len, 1))
 
-X_test_desire = np.tile(np.zeros(8), (test_len, 1))
-X_test_rnn = np.tile(np.zeros(512), (test_len, 1))
+# X_test_desire = np.tile(np.zeros(8), (test_len, 1))
+# X_test_rnn = np.tile(np.zeros(512), (test_len, 1))
 
 
-model = build_modified_openpilot_model()
+model = build_concat_openpilot_model()
+# model.summary()
 
-model.summary()
-model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')
+# Prepare an optimizer.
+optimizer=Adam(lr=1e-04, decay=0.0)
+# Prepare a loss function.
+loss_fn = tf.keras.losses.mean_squared_error
 
 t0 = time.time()
-model.fit({'vision': X_train, 'desire': X_train_desire, 'rnn_state': X_train_rnn}, Y_train, validation_data=({'vision': X_test, 'desire': X_test_desire, 'rnn_state': X_test_rnn}, Y_test), shuffle=True, epochs=30, batch_size=128)
+
+EPOCHS = 30
+BATCH_SIZE = 64
+
+batched_dataset = train_dataset.batch(100)
+
+desire_input = np.expand_dims(np.zeros(8), axis=0)
+# Iterate over the batches of a dataset.
+for e in range(EPOCHS):
+    for inputs, targets in batched_dataset:
+        steer_predict = []
+        steer_real = []
+        # for img, steer in zip(X_train, Y_train):
+        # img = np.expand_dims(img, axis=0)
+        if b == 0:
+            rnn_input = np.expand_dims(np.zeros(512), axis=0)
+
+        # Open a GradientTape.
+        with tf.GradientTape() as tape:
+            # Forward pass.
+            # predictions = model.predict({'vision': img, 'desire': desire_input, 'rnn_state': rnn_input})
+            predictions = model(inputs)
+
+            steer_predict.append(predictions[0][0])
+            steer_real.append(steer)
+
+        # Compute the loss value for this batch.
+        loss_value = loss_fn(np.asarray(steer_predict), np.asarray(steer_real))
+        print(loss_value)
+                
+        # Get gradients of loss wrt the weights.
+        gradients = tape.gradient(loss_value, model.trainable_weights)
+        # Update the weights of the model.
+        optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+
 t1 = time.time()
 print('Total training time:', t1 - t0, 'seconds')
+
+# model.compile(optimizer=Adam(lr=1e-04, decay=0.0), loss='mse')
+# model.fit({'vision': X_train, 'desire': X_train_desire, 'rnn_state': X_train_rnn}, Y_train, validation_data=({'vision': X_test, 'desire': X_test_desire, 'rnn_state': X_test_rnn}, Y_test), shuffle=True, epochs=30, batch_size=128)
+
+
 
 mkdir_p(MODEL_PATH)
 model_id = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
