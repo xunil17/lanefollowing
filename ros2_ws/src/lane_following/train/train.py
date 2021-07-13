@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 from sklearn.model_selection import train_test_split
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '0' 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
