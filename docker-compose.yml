@@ -73,6 +73,21 @@ services:
     privileged: true
     command: /lanefollowing/scripts/drive.sh
 
+  drive_perception:
+    build:
+      context: .
+    image: lgsvl/lanefollowing:openpilot
+    container_name: lanefollowing_drive_perception
+    volumes:
+      - .:/lanefollowing
+    environment:
+      - CUDA_CACHE_PATH=/lanefollowing/docker/.nv
+    runtime: nvidia
+    network_mode: host
+    init: true
+    privileged: true
+    command: /lanefollowing/scripts/drive_perception.sh
+
   drive_visual:
     build:
       context: .

@@ -11,6 +11,7 @@ setup(
     py_modules=[
         'collect',
         'drive',
+        'drive_perception'
     ],
     data_files=[
         ('share/' + package_name, ['package.xml']),
@@ -42,6 +43,7 @@ setup(
         'console_scripts': [
             'collect = collect:main',
             'drive = drive:main',
+            'drive_perception = drive_perception:main'
         ],
     },
 )

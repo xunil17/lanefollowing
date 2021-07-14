@@ -7,3 +7,12 @@ If running without docker-compose installed:
 docker run -it -v /home/sean/lanefollowing:/lanefollowing --runtime=nvidia lgsvl/lanefollowing:openpilot 
 
 python -u ros2_ws/src/lane_following/train/train.py
+python -u ros2_ws/src/lane_following/drive.py
+
+Tasks:
+
+Move perception module to repo and try and visualize results
+    Load and move model
+    Move preprocess function
+    Visualize output to see lane lines
+
