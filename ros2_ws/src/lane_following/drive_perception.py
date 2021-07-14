@@ -18,6 +18,7 @@ import math
 import time
 import argparse
 
+from postprocess import postprocess
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -54,7 +55,7 @@ class DrivePerception(Node):
         # Model parameters
         self.model = self.get_model(self.model_path)
 
-        self.rnn_input = np.zeros(512)
+        self.rnn_input = np.expand_dims(np.zeros(512), axis=0)
         self.img = None
         self.steering = 0.
         self.inference_time = 0.
@@ -78,7 +79,8 @@ class DrivePerception(Node):
             if self.model is None:
                 self.model = self.get_model(self.model_path)
             t0 = time.time()
-            # self.steering = self.predict(self.model, self.img)
+            path, left_lane, right_lane = self.predict(self.model, self.img)
+            self.log.info(path)
             t1 = time.time()
             self.inference_time = t1 - t0
             if self.enable_visualization:
@@ -95,8 +97,8 @@ class DrivePerception(Node):
         message = VehicleControlData()
         message.header = header
         message.target_wheel_angular_rate = float(self.steering)
-        self.control_pub.publish(message)
-        self.log.info('[{:.3f}] Predicted steering command: "{}"'.format(time.time(), message.target_wheel_angular_rate))
+        # self.control_pub.publish(message)
+        # self.log.info('[{:.3f}] Predicted steering command: "{}"'.format(time.time(), message.target_wheel_angular_rate))
 
     def convert_timestamp(self, seconds):
         nanosec = seconds * 1e9
@@ -120,13 +122,13 @@ class DrivePerception(Node):
         img = preprocess_image(img)
 
         img = np.expand_dims(img, axis=0)  # img = img[np.newaxis, :, :]
-        
-        rnn_input = np.expand_dims(self.rnn_input, axis=0)
+    
 
-        desire_input = np.zeros(8)
-        path, left_lane, right_lane, lead, dense_1, snpe_pleaser2, add_3 = self.model.predict({'vision': img, 'desire': desire_input, 'rnn_state': rnn_input})
-
-        self.rnn_input = add_3
+        desire_input = np.expand_dims(np.zeros(8), axis=0)
+        model_output = self.model.predict({'vision': img, 'desire': desire_input, 'rnn_state': self.rnn_input})
+        self.rnn_input = model_output[:, -512:]
+        path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output)
+        # self.rnn_input = add_3
 
         return path, left_lane, right_lane
 
@@ -182,12 +184,12 @@ class DrivePerception(Node):
         else:
             self.log.info('Received a camera image from ROS topic: {}'.format(self.camera_topic))
             self.destroy_timer(self.check_timer)
-            self.create_timer(self.publish_period, self.publish_steering)
+            # self.create_timer(self.publish_period, self.publish_steering)
 
 
 def main(args=None):
     rclpy.init(args=args)
-    drive = Drive()
+    drive = DrivePerception()
     rclpy.spin(drive)
 
 
