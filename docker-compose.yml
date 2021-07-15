@@ -87,6 +87,7 @@ services:
     init: true
     privileged: true
     command: /lanefollowing/scripts/drive_perception.sh
+    # command: ["python", "-u", "/lanefollowing/ros2_ws/src/lane_following/drive_perception.py"]
 
   drive_visual:
     build:

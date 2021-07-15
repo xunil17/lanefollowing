@@ -11,7 +11,8 @@ setup(
     py_modules=[
         'collect',
         'drive',
-        'drive_perception'
+        'drive_perception',
+        'process'
     ],
     data_files=[
         ('share/' + package_name, ['package.xml']),

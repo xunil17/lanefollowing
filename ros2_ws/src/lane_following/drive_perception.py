@@ -18,7 +18,7 @@ import math
 import time
 import argparse
 
-from postprocess import postprocess
+from process import postprocess
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -79,8 +79,8 @@ class DrivePerception(Node):
             if self.model is None:
                 self.model = self.get_model(self.model_path)
             t0 = time.time()
-            path, left_lane, right_lane = self.predict(self.model, self.img)
-            self.log.info(path)
+            self.predict(self.model, self.img)
+            
             t1 = time.time()
             self.inference_time = t1 - t0
             if self.enable_visualization:
@@ -127,10 +127,9 @@ class DrivePerception(Node):
         desire_input = np.expand_dims(np.zeros(8), axis=0)
         model_output = self.model.predict({'vision': img, 'desire': desire_input, 'rnn_state': self.rnn_input})
         self.rnn_input = model_output[:, -512:]
-        path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output)
+        path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output[0])
         # self.rnn_input = add_3
-
-        return path, left_lane, right_lane
+        self.log.info(','.join(map(str,path_poly.tolist())))
 
     def visualize(self, img, steering):
         c = np.fromstring(bytes(img.data), np.uint8)
