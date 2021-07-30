@@ -79,8 +79,12 @@ services:
     image: lgsvl/lanefollowing:openpilot
     container_name: lanefollowing_drive_perception
     volumes:
+      - ${XAUTHORITY}:/tmp/.Xauthority
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - .:/lanefollowing
     environment:
+      - DISPLAY
+      - XAUTHORITY=/tmp/.Xauthority
       - CUDA_CACHE_PATH=/lanefollowing/docker/.nv
     runtime: nvidia
     network_mode: host

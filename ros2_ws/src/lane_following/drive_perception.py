@@ -19,6 +19,7 @@ import time
 import argparse
 
 from process import postprocess
+import matplotlib.pyplot as plt
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -64,6 +65,8 @@ class DrivePerception(Node):
         self.steer_ratio = self.get_param('steer_ratio', 16.)
         self.steering_wheel_single_direction_max = self.get_param('steering_wheel_single_direction_max', 470.)  # in degrees
         self.wheel_base = self.get_param('wheel_base', 2.836747)  # in meters
+
+        self.counter = 0
 
         # FPS
         self.last_time = time.time()
@@ -116,20 +119,41 @@ class DrivePerception(Node):
 
         return model
 
+    def poly(self, p, x):
+        return p[0] * (x ** 3) + p[1] * (x ** 2) + p[2] * x + p[3]
+
     def predict(self, model, img):
         c = np.fromstring(bytes(img.data), np.uint8)
         img = cv2.imdecode(c, cv2.IMREAD_COLOR)
-        img = preprocess_image(img)
+        
+        # if self.counter < 100:
+        #     cv2.imwrite("input_img_%i.jpg" % self.counter,img)
+        #     self.counter += 1
 
+        # cv2.imshow("raw", img)
+        # cv2.waitKey(0)
+
+        img = preprocess_image(img)
         img = np.expand_dims(img, axis=0)  # img = img[np.newaxis, :, :]
-    
+
 
         desire_input = np.expand_dims(np.zeros(8), axis=0)
         model_output = self.model.predict({'vision': img, 'desire': desire_input, 'rnn_state': self.rnn_input})
         self.rnn_input = model_output[:, -512:]
         path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output[0])
-        # self.rnn_input = add_3
-        self.log.info(','.join(map(str,path_poly.tolist())))
+
+        points = list(range(192))
+        l_points = [self.poly(left_poly, i) for i in points]
+        r_points = [self.poly(right_poly, i) for i in points]
+        p_points = [self.poly(path_poly, i) for i in points]
+
+        plt.figure()
+        plt.plot(points, p_points,  label="path")
+        plt.plot(points, l_points, label="left")
+        plt.plot(points, r_points, label="right")
+        plt.legend()
+        plt.show()
+
 
     def visualize(self, img, steering):
         c = np.fromstring(bytes(img.data), np.uint8)
