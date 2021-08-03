@@ -76,13 +76,26 @@ def preprocess_image(cv_img, crop=False):
     if crop:
         cv_img = cv_img[540:960, :, :]
 
-    
-    cv_img = cv2.resize(cv_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
+    cropped_img = cv_img[200:600, :]
+    cv2.imshow("input", cropped_img)
+
+    # 876 x 1164
+
+
+    # 512 * 256
+    cv_img = cv2.resize(cropped_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
+    cv2.imshow("cropped", cv_img)
+    cv2.waitKey(1)
+
+
     # print(cv_img.shape)
     cv_img = cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
     cv_img = rgb2yuv(cv_img)
 
     cv_img = np.transpose(cv_img, (2, 0, 1))
+    # 6xwidthxheight
+    # heightxwidth x 6
+
     # print(cv_img.shape)
 
     # cv_img = cv_img / 255. - 0.5

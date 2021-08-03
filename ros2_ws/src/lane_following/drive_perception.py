@@ -124,16 +124,13 @@ class DrivePerception(Node):
 
     def predict(self, model, img):
         c = np.fromstring(bytes(img.data), np.uint8)
-        img = cv2.imdecode(c, cv2.IMREAD_COLOR)
+        input_img = cv2.imdecode(c, cv2.IMREAD_COLOR)
         
         # if self.counter < 100:
         #     cv2.imwrite("input_img_%i.jpg" % self.counter,img)
         #     self.counter += 1
 
-        # cv2.imshow("raw", img)
-        # cv2.waitKey(0)
-
-        img = preprocess_image(img)
+        img = preprocess_image(input_img)
         img = np.expand_dims(img, axis=0)  # img = img[np.newaxis, :, :]
 
 
@@ -142,17 +139,32 @@ class DrivePerception(Node):
         self.rnn_input = model_output[:, -512:]
         path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output[0])
 
+
+        # self.log.info("left: %4.5f , right: %4.5f" % (left_prob, right_prob))
+
         points = list(range(192))
         l_points = [self.poly(left_poly, i) for i in points]
         r_points = [self.poly(right_poly, i) for i in points]
         p_points = [self.poly(path_poly, i) for i in points]
 
-        plt.figure()
+        fig = plt.figure()
         plt.plot(points, p_points,  label="path")
         plt.plot(points, l_points, label="left")
         plt.plot(points, r_points, label="right")
         plt.legend()
-        plt.show()
+        fig.canvas.draw()
+        # plt.show()
+
+        plot_img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        plot_img  = plot_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        # img is rgb, convert to opencv's default bgr
+        plot_img = cv2.cvtColor(plot_img,cv2.COLOR_RGB2BGR)
+
+        # display image with opencv or any operation you like
+        # cv2.imshow("input", input_img)
+        cv2.imshow("plot", plot_img)
+        cv2.waitKey(1)
 
 
     def visualize(self, img, steering):
