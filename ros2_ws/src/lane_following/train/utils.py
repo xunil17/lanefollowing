@@ -79,10 +79,6 @@ def preprocess_image(cv_img, crop=False):
     cropped_img = cv_img[200:600, :]
     cv2.imshow("input", cropped_img)
 
-    # 876 x 1164
-
-
-    # 512 * 256
     cv_img = cv2.resize(cropped_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
     cv2.imshow("cropped", cv_img)
     cv2.waitKey(1)
