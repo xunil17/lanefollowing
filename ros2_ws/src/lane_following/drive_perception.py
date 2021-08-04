@@ -140,7 +140,7 @@ class DrivePerception(Node):
         path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output[0])
 
 
-        # self.log.info("left: %4.5f , right: %4.5f" % (left_prob, right_prob))
+        # self.log.info()
 
         points = list(range(192))
         l_points = [self.poly(left_poly, i) for i in points]
@@ -162,7 +162,11 @@ class DrivePerception(Node):
         plot_img = cv2.cvtColor(plot_img,cv2.COLOR_RGB2BGR)
 
         # display image with opencv or any operation you like
-        # cv2.imshow("input", input_img)
+
+        text = "left: %4.5f , right: %4.5f" % (left_prob, right_prob)
+        plot_img = cv2.putText(plot_img, text, (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 
+                   0.5, (0, 0, 255), 1, cv2.LINE_AA)
+
         cv2.imshow("plot", plot_img)
         cv2.waitKey(1)
 
