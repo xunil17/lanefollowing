@@ -93,6 +93,26 @@ services:
     command: /lanefollowing/scripts/drive_perception.sh
     # command: ["python", "-u", "/lanefollowing/ros2_ws/src/lane_following/drive_perception.py"]
 
+  planning_control:
+    build:
+      context: .
+    image: lgsvl/lanefollowing:openpilot
+    container_name: lanefollowing_planning_control
+    volumes:
+      - ${XAUTHORITY}:/tmp/.Xauthority
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - .:/lanefollowing
+    environment:
+      - DISPLAY
+      - XAUTHORITY=/tmp/.Xauthority
+      - CUDA_CACHE_PATH=/lanefollowing/docker/.nv
+    runtime: nvidia
+    network_mode: host
+    init: true
+    privileged: true
+    # command: /lanefollowing/scripts/drive_perception.sh
+    command: ["python", "-u", "/lanefollowing/ros2_ws/src/lane_following/planner_controller.py"]
+
   drive_visual:
     build:
       context: .

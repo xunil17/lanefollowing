@@ -4,3 +4,4 @@ drive:
         model_path: "/lanefollowing/ros2_ws/src/lane_following/model/driving_model.h5"
         camera_topic: "/simulator/sensor/camera/center/compressed"
         control_topic: "/lanefollowing/steering_cmd"
+        canbus_topic: "/simulator/sensor/canbus"

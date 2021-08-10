@@ -1,1 +1,6 @@
 docker/.nv
+.git
+.vscode
+ros2_ws/src/lane_following/train/data
+ros2_ws/src/lane_following/train/data_old
+__pycache__/

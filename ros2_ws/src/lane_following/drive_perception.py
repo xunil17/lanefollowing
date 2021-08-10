@@ -5,7 +5,7 @@ from rclpy.time import Time
 from rclpy.clock import ClockType
 from std_msgs.msg import Header
 from sensor_msgs.msg import CompressedImage
-from lgsvl_msgs.msg import VehicleControlData
+from lgsvl_msgs.msg import VehicleControlData, CanBusData
 import threading
 import numpy as np
 import cv2
@@ -21,10 +21,24 @@ import argparse
 from process import postprocess
 import matplotlib.pyplot as plt
 
+#LGSVL planner
+from selfdrive.controls.lib.lane_planner import LanePlanner
+from polyfuzz.polyfuzz import PolyFuzz, LaneLine, ModelOutput, VehicleState
+
+
+PLAN_PER_PREDICT = 25
+
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 K.set_session(sess)
+
+def get_steer_angle(PF, model_output, v=29, steering_angle=4):
+    PF.update_state(v, steering_angle)
+    path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output)
+    valid, cost, angle = PF.run(left_poly, right_poly, path_poly, left_prob, right_prob)
+    angle_steers_des = PF.angle_steers_des_mpc
+    return valid, cost, angle, angle_steers_des
 
 class DrivePerception(Node):
     def __init__(self):
@@ -37,12 +51,14 @@ class DrivePerception(Node):
         # ROS topics
         self.camera_topic = self.get_param('camera_topic')
         self.control_topic = self.get_param('control_topic')
+        self.canbus_topic = self.get_param('canbus_topic')
 
         self.log.info('Camera topic: {}'.format(self.camera_topic))
         self.log.info('Control topic: {}'.format(self.control_topic))
 
         # ROS communications
         self.image_sub = self.create_subscription(CompressedImage, self.camera_topic, self.image_callback)
+        self.canbus_sub = self.create_subscription(CanBusData, self.canbus_topic, self.canbus_callback)
         # self.control_pub = self.create_publisher(VehicleControlData, self.control_topic)
 
         # ROS timer
@@ -73,7 +89,20 @@ class DrivePerception(Node):
         self.frames = 0
         self.fps = 0.
 
+
+        #Planner and Controller
+        self.vehicle_state = VehicleState()
+        self.PF = PolyFuzz()
+
+
         self.log.info('Up and running...')
+
+    def canbus_callback(self, canbus_data):
+        max_steering_angle_increase = 0.25
+        steer_pct = float(canbus_data.steer_pct)
+        v_ego = float(canbus_data.mps)
+        self.vehicle_state.update_velocity(v_ego)
+        self.vehicle_state.update_steer(current_steering_angle)           
 
     def image_callback(self, img):
         self.get_fps()
@@ -139,9 +168,30 @@ class DrivePerception(Node):
         self.rnn_input = model_output[:, -512:]
         path_poly, left_poly, right_poly, left_prob, right_prob = postprocess(model_output[0])
 
+        valid, cost, angle, angle_steers_des_mpc = get_steer_angle(
+            self.PF, model_out, self.vehicle_state.v_ego, self.vehicle_state.current_steering_angle
+        )
+
+        print("{}: valid: {}, cost: {}, angle: {}".format(i, valid, cost, angle))
+        print("desired steering angle: {}, current steering angle: {}".format(angle_steers_des_mpc, current_steering_angle))
+
+        angle_change = np.clip(budget_steering_angle, -max_steering_angle_increase, max_steering_angle_increase)
+        budget_steering_angle = angle_steers_des_mpc - current_steering_angle     
+
+        # print(curren)
+
+        # LP = LanePlanner()
+        # md = ModelOutput(left_poly, right_poly, path_poly, left_prob, right_prob)
+        # LP.update(v_ego, md)
+
 
         # self.log.info()
 
+        if self.enable_visualization:
+            self.visulize_lane_lines(left_poly, right_poly, path_poly)
+
+
+    def visulize_lane_lines(self, left_poly, right_poly, path_poly):
         points = list(range(192))
         l_points = [self.poly(left_poly, i) for i in points]
         r_points = [self.poly(right_poly, i) for i in points]
@@ -153,7 +203,6 @@ class DrivePerception(Node):
         plt.plot(points, r_points, label="right")
         plt.legend()
         fig.canvas.draw()
-        # plt.show()
 
         plot_img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
         plot_img  = plot_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
@@ -165,7 +214,7 @@ class DrivePerception(Node):
 
         text = "left: %4.5f , right: %4.5f" % (left_prob, right_prob)
         plot_img = cv2.putText(plot_img, text, (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 
-                   0.5, (0, 0, 255), 1, cv2.LINE_AA)
+                0.5, (0, 0, 255), 1, cv2.LINE_AA)
 
         cv2.imshow("plot", plot_img)
         cv2.waitKey(1)

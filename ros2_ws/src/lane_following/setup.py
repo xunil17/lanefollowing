@@ -7,6 +7,7 @@ setup(
     version='0.0.1',
     packages=[
         'train',
+        'polyfuzz'
     ],
     py_modules=[
         'collect',

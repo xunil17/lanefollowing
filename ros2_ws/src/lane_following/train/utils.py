@@ -80,8 +80,8 @@ def preprocess_image(cv_img, crop=False):
     # cv2.imshow("input", cropped_img)
 
     cv_img = cv2.resize(cropped_img, IMAGE_DIM, interpolation=cv2.INTER_AREA)
-    cv2.imshow("cropped", cv_img)
-    cv2.waitKey(1)
+    # cv2.imshow("cropped", cv_img)
+    # cv2.waitKey(1)
 
 
     # print(cv_img.shape)

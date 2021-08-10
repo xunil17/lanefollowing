@@ -2,6 +2,9 @@
 
 See detailed instructions and tutorial at: https://www.svlsimulator.com/docs/tutorials/lane-following
 
+Use this command to build repo with openpilot implemented
+docker build . -t lgsvl/lanefollowing:openpilot
+
 If running without docker-compose installed:
 
 docker run -it -v /home/sean/lanefollowing:/lanefollowing --runtime=nvidia lgsvl/lanefollowing:openpilot 
